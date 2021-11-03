@@ -1,1 +1,2 @@
-# 478proj
+# 478proj 
+Made by Osiris, Evan, and Rick
