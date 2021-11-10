@@ -2,7 +2,6 @@
 
 import os
 import glob
-import time
 from simple_pid import PID
 import RPi.GPIO as GPIO  
 import time              
@@ -31,22 +30,6 @@ def read_temp():
         temp_f = temp_c * 9.0 / 5.0 + 32.0
         return temp_c, temp_f
 
-# convert temperature reading to a PWM percentage
-def tempToPWM(temp):
-    if (temp < 0):
-        ret = 0 
-    elif (temp >= 0 and temp < 10):
-        ret = 20
-    elif (temp >= 10 and temp < 20):
-        ret = 40
-    elif (temp >= 20 and temp < 30):
-        ret = 60
-    elif (temp >= 30 and temp < 40):
-        ret = 80
-    else:
-        ret = 100
-
-    return ret
 #======================
 # 1-wire initialization
 #======================
@@ -60,12 +43,12 @@ device_file = device_folder + '/w1_slave'
 # PID initialization
 #===================
 Kp = 1
-Ki = 0
-Kd = 0
+Ki = 1
+Kd = 1
 sample_time = 0.01
 
 # desired value in deg C
-desired = 35
+desired = 25
 
 pid = PID(Kp, Ki, Kd, setpoint = desired)
 
@@ -73,12 +56,13 @@ pid = PID(Kp, Ki, Kd, setpoint = desired)
 pid.sample_time = sample_time
 
 # output limited between 0% and 100%
-pid.output_limits = (0, 100)
+pid.output_limits = (-50, 50)
+#pid.proportional_on_measurement = True
 
 #===================
 # PWM initialization
 #===================
-pin = 18
+pin = 12
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(pin, GPIO.OUT)
 GPIO.output(pin, GPIO.LOW)
@@ -95,13 +79,12 @@ while True:
     # read new temperature
     tempC = read_temp()[0]
 
-    # convert temperature to duty cycle
-    PWM = tempToPWM(tempC)
-    
     # get new output from PID controller
-    control = pid(tempC)
+    output = pid(tempC)
 
-    print(tempC, PWM, control)
+    control = -1 * output + 50
+
+    print(tempC, control)
     
 
 
